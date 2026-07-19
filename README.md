@@ -28,4 +28,15 @@ If you want to run or test this application locally on your machine, follow thes
    git clone \\\[https://github.com/gordogecko/starPool.git](https://github.com/gordogecko/starPool.git)
    cd your-repo-name
 
+Install the dependencies:
+Make sure you have Python installed, then install Streamlit:
+
+Bash
+pip install -r requirements.txt
+Run the Streamlit application:
+
+Bash
+streamlit run app.py
+Open your browser and navigate to http://localhost:8501.
+
 
