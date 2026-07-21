@@ -3,7 +3,7 @@ import streamlit.components.v1 as components
 
 # Configure the Streamlit page layout
 st.set_page_config(
-    page_title="3D Zero-Gravity Pool - Cosmic Nebula Edition",
+    page_title="3D Zero-Gravity Pool - Star Pool Pocket Edition",
     page_icon="🌌",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -31,7 +31,7 @@ game_html = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>3D Zero-Gravity Pool - Cosmic Nebula Edition</title>
+    <title>3D Zero-Gravity Pool - Star Pool Pocket Edition</title>
     <style>
         :root {
             --hull-blue: #09172e;
@@ -463,7 +463,7 @@ game_html = """<!DOCTYPE html>
     <!-- Welcome Overlay -->
     <div id="welcome-overlay" class="overlay">
         <div class="overlay-content">
-            <h2>STAR-DRIVE BILLIARDS</h2>
+            <h2>STAR POOL POCKET</h2>
             <p>Welcome to deep orbit, Captain. You are situated at the viewport of a high-containment magnetic rectangular chamber floating within a gorgeous glowing stellar nebula.</p>
             <p style="color: var(--laser-cyan);">Align the Holographic Laser Cue with the Left Radar Joystick.<br>Throttle Engine Power with the Right Energy Track.<br>Launch strikes to displace kinetic bodies.</p>
             <p style="color: var(--plasma-orange); font-size: 11px;">Mission objective: Warp the Obsidian 8-Ball into any corner gravitational vortex. Avoid losing the White Cue Ball to the gravity wells.</p>
@@ -498,6 +498,7 @@ game_html = """<!DOCTYPE html>
             <h2 style="color: var(--laser-cyan);">ORBIT ACHIEVED!</h2>
             <p>Excellent shot sequence! The gravity anchor has absorbed the 8-Ball safely.</p>
             <p style="font-size: 18px; color: #fff;">FLIGHT MANEUVERS: <span id="final-shots" class="stat-val">0</span></p>
+            <p style="font-size: 18px; color: #fff;">SCORE: <span id="final-score" class="stat-val">0</span></p>
             <button id="victory-restart-btn" class="menu-btn interactive">NEXT EXPEDITION</button>
         </div>
     </div>
@@ -509,9 +510,10 @@ game_html = """<!DOCTYPE html>
     <div id="hud-container">
         <header>
             <div class="space-panel title-panel">
-                <h1>ORBITAL POOL // SHIP CONSOLE (LARGE)</h1>
+                <h1>STAR POOL POCKET // SHIP CONSOLE</h1>
             </div>
             <div class="space-panel stats-panel">
+                <div>SCORE: <span id="hud-score" class="stat-val">0</span></div>
                 <div>MANEUVERS: <span id="hud-shots" class="stat-val">0</span></div>
                 <div>GRAV CORE: <span id="hud-status" style="color:var(--plasma-orange); text-shadow:0 0 5px var(--plasma-orange);">STABLE</span></div>
             </div>
@@ -549,6 +551,7 @@ game_html = """<!DOCTYPE html>
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
         let shotsCount = 0;
+        let playerScore = 0;
         let isGameOver = false;
         let aimingHorizontal = 45; 
         let aimingVertical = 15;   
@@ -621,6 +624,30 @@ game_html = """<!DOCTYPE html>
                 gain.gain.exponentialRampToValueAtTime(0.005, audioCtx.currentTime + 0.15);
                 osc.start();
                 osc.stop(audioCtx.currentTime + 0.15);
+            }
+            else if (type === 'reward') {
+                const now = audioCtx.currentTime;
+                const playTone = (freq, start, duration) => {
+                    const oscTone = audioCtx.createOscillator();
+                    const gainTone = audioCtx.createGain();
+                    oscTone.type = 'sine';
+                    oscTone.frequency.setValueAtTime(freq, start);
+                    oscTone.frequency.exponentialRampToValueAtTime(freq * 1.5, start + duration);
+                    
+                    gainTone.gain.setValueAtTime(0, start);
+                    gainTone.gain.linearRampToValueAtTime(0.2, start + 0.05);
+                    gainTone.gain.exponentialRampToValueAtTime(0.001, start + duration);
+                    
+                    oscTone.connect(gainTone);
+                    gainTone.connect(audioCtx.destination);
+                    oscTone.start(start);
+                    oscTone.stop(start + duration + 0.05);
+                };
+                
+                playTone(523.25, now, 0.35); // C5
+                playTone(659.25, now + 0.08, 0.35); // E5
+                playTone(783.99, now + 0.16, 0.35); // G5
+                playTone(1046.50, now + 0.24, 0.5); // C6
             }
         }
 
@@ -1088,6 +1115,14 @@ game_html = """<!DOCTYPE html>
             } else {
                 document.getElementById('hud-status').innerText = "WARPED";
                 document.getElementById('hud-status').style.color = "var(--laser-cyan)";
+                
+                // Credit user with 100 points
+                playerScore += 100;
+                document.getElementById('hud-score').innerText = playerScore;
+                
+                // Play cool sci-fi reward chime
+                playSciFiSound('reward');
+                
                 triggerVictory();
             }
         }
@@ -1120,13 +1155,16 @@ game_html = """<!DOCTYPE html>
         function triggerVictory() {
             isGameOver = true;
             document.getElementById('final-shots').innerText = shotsCount;
+            document.getElementById('final-score').innerText = playerScore;
             document.getElementById('victory-overlay').classList.remove('hidden');
         }
 
         function restartGame() {
             shotsCount = 0;
+            playerScore = 0;
             isGameOver = false;
             document.getElementById('hud-shots').innerText = "0";
+            document.getElementById('hud-score').innerText = "0";
             document.getElementById('hud-status').innerText = "STABLE";
             document.getElementById('hud-status').style.color = "var(--plasma-orange)";
 
