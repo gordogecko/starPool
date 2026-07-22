@@ -466,7 +466,7 @@ game_html = """<!DOCTYPE html>
             <h2>STAR POOL POCKET</h2>
             <p>Welcome to deep orbit, Captain. You are situated at the viewport of a high-containment magnetic rectangular chamber floating within a gorgeous glowing stellar nebula.</p>
             <p style="color: var(--laser-cyan);">Align the Holographic Laser Cue with the Left Radar Joystick.<br>Throttle Engine Power with the Right Energy Track.<br>Launch strikes to displace kinetic bodies.</p>
-            <p style="color: var(--plasma-orange); font-size: 11px;">Mission objective: Warp ANY target ball (8 through 15) into any corner gravitational vortex. Avoid losing the White Cue Ball to the gravity wells.</p>
+            <p style="color: var(--plasma-orange); font-size: 11px;">Mission objective: Warp ALL target balls (8 through 15) into any corner gravitational vortex. Avoid losing the White Cue Ball to the gravity wells.</p>
             <button id="start-game-btn" class="menu-btn interactive">INITIATE MISSION</button>
         </div>
     </div>
@@ -1116,7 +1116,7 @@ game_html = """<!DOCTYPE html>
                 if (ball.userData.sunk) return;
                 pockets.forEach(pocket => {
                     const dist = ball.position.distanceTo(pocket.position);
-                    if (dist < (pocketRadius + ballRadius * 0.45)) {
+                    if (dist <= (pocketRadius + ballRadius)) {
                         ball.userData.sunk = true;
                         ball.userData.pocketTarget = pocket.position.clone();
                         playSciFiSound('pocket');
@@ -1130,14 +1130,21 @@ game_html = """<!DOCTYPE html>
                 showScratchAlert();
                 setTimeout(() => { respawnCueBall(); }, 1800);
             } else {
-                playerScore += 100;
+                playerScore += 1000;
+                
+                // Determine if this was the very last target ball on the table
+                const remainingTargets = balls.filter(b => !b.userData.isCue && !b.userData.sunk);
+                const isLastBall = remainingTargets.length === 0;
+                
+                if (isLastBall) {
+                    playerScore += 10000;
+                }
+                
                 document.getElementById('hud-score').innerText = playerScore;
                 playSciFiSound('reward');
 
-                // Check if ANY target ball has been sunk to trigger victory condition
-                const anyTargetSunk = balls.some(b => !b.userData.isCue && b.userData.sunk);
-
-                if (anyTargetSunk) {
+                // Trigger victory condition only if ALL target balls have been sunk
+                if (isLastBall) {
                     document.getElementById('hud-status').innerText = "WARPED";
                     document.getElementById('hud-status').style.color = "var(--laser-cyan)";
                     triggerVictory();
