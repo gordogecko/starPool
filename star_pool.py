@@ -158,8 +158,8 @@ game_html = """<!DOCTYPE html>
 
         /* Radar styled Aim Joystick */
         .joystick-outer {
-            width: 160px;
-            height: 160px;
+            width: 184px;
+            height: 184px;
             border-radius: 50%;
             background: rgba(2, 6, 18, 0.85);
             border: 2px solid var(--laser-cyan);
@@ -886,7 +886,7 @@ game_html = """<!DOCTYPE html>
                 color: 0xffffff,
                 map: textureMap,
                 roughness: isCue ? 0.08 : 0.05,
-                metalness: 0.0, // Set to 0.0 so the yellow canvas texture displays true color without metallic space lighting distortion
+                metalness: 0.0,
                 emissive: isCue ? 0x3a3a3a : 0x000000,
                 clearcoat: 1.0,
                 clearcoatRoughness: 0.02
@@ -1116,11 +1116,9 @@ game_html = """<!DOCTYPE html>
                 document.getElementById('hud-status').innerText = "WARPED";
                 document.getElementById('hud-status').style.color = "var(--laser-cyan)";
                 
-                // Credit user with 100 points
                 playerScore += 100;
                 document.getElementById('hud-score').innerText = playerScore;
                 
-                // Play cool sci-fi reward chime
                 playSciFiSound('reward');
                 
                 triggerVictory();
@@ -1281,7 +1279,7 @@ game_html = """<!DOCTYPE html>
         const joystickKnob = document.getElementById('joystick-knob');
         let isJoystickActive = false;
         let joystickStartPos = { x: 0, y: 0 };
-        const maxRadius = 45;
+        const maxRadius = 52;
 
         function handleJoystickMove(clientVec) {
             const dx = clientVec.x - joystickStartPos.x;
@@ -1297,7 +1295,7 @@ game_html = """<!DOCTYPE html>
 
             joystickKnob.style.transform = `translate(${finalX}px, ${finalY}px)`;
 
-            aimingHorizontal += (finalX / maxRadius) * 2.6;
+            aimingHorizontal -= (finalX / maxRadius) * 2.6;
             aimingVertical -= (finalY / maxRadius) * 1.5;
 
             aimingVertical = Math.max(-85, Math.min(85, aimingVertical));
