@@ -466,7 +466,7 @@ game_html = """<!DOCTYPE html>
             <h2>STAR POOL POCKET</h2>
             <p>Welcome to deep orbit, Captain. You are situated at the viewport of a high-containment magnetic rectangular chamber floating within a gorgeous glowing stellar nebula.</p>
             <p style="color: var(--laser-cyan);">Align the Holographic Laser Cue with the Left Radar Joystick.<br>Throttle Engine Power with the Right Energy Track.<br>Launch strikes to displace kinetic bodies.</p>
-            <p style="color: var(--plasma-orange); font-size: 11px;">Mission objective: Warp both the Obsidian 8-Ball and the Striped 9-Ball into any corner gravitational vortex. Avoid losing the White Cue Ball to the gravity wells.</p>
+            <p style="color: var(--plasma-orange); font-size: 11px;">Mission objective: Warp ANY target ball (8 through 15) into any corner gravitational vortex. Avoid losing the White Cue Ball to the gravity wells.</p>
             <button id="start-game-btn" class="menu-btn interactive">INITIATE MISSION</button>
         </div>
     </div>
@@ -496,7 +496,7 @@ game_html = """<!DOCTYPE html>
     <div id="victory-overlay" class="overlay hidden">
         <div class="overlay-content" style="border-color:var(--laser-cyan); box-shadow: 0 0 30px rgba(0,243,255,0.4);">
             <h2 style="color: var(--laser-cyan);">ORBIT ACHIEVED!</h2>
-            <p>Excellent shot sequence! The gravity anchor has absorbed both the 8-Ball and the 9-Ball safely.</p>
+            <p>Excellent shot sequence! The gravity anchor has absorbed a target ball safely.</p>
             <p style="font-size: 18px; color: #fff;">FLIGHT MANEUVERS: <span id="final-shots" class="stat-val">0</span></p>
             <p style="font-size: 18px; color: #fff;">SCORE: <span id="final-score" class="stat-val">0</span></p>
             <button id="victory-restart-btn" class="menu-btn interactive">NEXT EXPEDITION</button>
@@ -823,64 +823,25 @@ game_html = """<!DOCTYPE html>
         const ballRadius = 0.8;
         const balls = [];
 
-        function create8BallTexture() {
+        // Universal Ball Texture Generator for Solids (8) and Stripes (9-15)
+        function createNumberedBallTexture(number, color, isStripe) {
             const canvas = document.createElement('canvas');
             canvas.width = 512;
             canvas.height = 256;
             const ctx = canvas.getContext('2d');
 
-            ctx.fillStyle = '#ffff00'; // Bright yellow
-            ctx.fillRect(0, 0, 512, 256);
-
-            ctx.strokeStyle = '#ff3300';
-            ctx.lineWidth = 2.5;
-            ctx.globalAlpha = 0.45;
-            ctx.beginPath();
-            for(let i=0; i<6; i++) {
-                ctx.moveTo(Math.random()*512, Math.random()*256);
-                for(let j=0; j<4; j++) {
-                    ctx.lineTo(Math.random()*512, Math.random()*256);
-                }
+            if (isStripe) {
+                // Solid White Base
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, 512, 256);
+                // Color Stripe across the middle
+                ctx.fillStyle = color;
+                ctx.fillRect(0, 64, 512, 128);
+            } else {
+                // Solid Color Base
+                ctx.fillStyle = color;
+                ctx.fillRect(0, 0, 512, 256);
             }
-            ctx.stroke();
-            ctx.globalAlpha = 1.0;
-
-            ctx.fillStyle = '#ff5500';
-            ctx.shadowColor = '#ff2200';
-            ctx.shadowBlur = 15;
-            ctx.beginPath();
-            ctx.arc(256, 128, 54, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = '#ffffff';
-            ctx.shadowBlur = 0;
-            ctx.beginPath();
-            ctx.arc(256, 128, 42, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = '#0c0c0f';
-            ctx.font = 'bold 72px "Segoe UI", sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('8', 256, 128);
-
-            return new THREE.CanvasTexture(canvas);
-        }
-
-        // --- NEW: 9-Ball Texture ---
-        function create9BallTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512;
-            canvas.height = 256;
-            const ctx = canvas.getContext('2d');
-
-            // Solid White Base
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, 512, 256);
-
-            // Yellow Stripe across the middle
-            ctx.fillStyle = '#ffcc00';
-            ctx.fillRect(0, 64, 512, 128);
 
             // Central White Circle
             ctx.fillStyle = '#ffffff';
@@ -892,15 +853,17 @@ game_html = """<!DOCTYPE html>
 
             ctx.shadowBlur = 0;
 
-            // Number 9
+            // Number
             ctx.fillStyle = '#0c0c0f';
             ctx.font = 'bold 72px "Segoe UI", sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('9', 256, 128);
+            ctx.fillText(number.toString(), 256, 128);
             
-            // Bottom underline for the 9
-            ctx.fillRect(236, 160, 40, 6);
+            // Bottom underline for numbers 9 (to distinguish from 6)
+            if (number === 9) {
+                ctx.fillRect(236, 160, 40, 6);
+            }
 
             return new THREE.CanvasTexture(canvas);
         }
@@ -916,8 +879,6 @@ game_html = """<!DOCTYPE html>
         }
 
         const cueBallTex = createCueBallTexture();
-        const eightBallTex = create8BallTexture();
-        const nineBallTex = create9BallTexture();
 
         function createBall(textureMap, x, y, z, isCue) {
             const geometry = new THREE.SphereGeometry(ballRadius, 64, 64);
@@ -945,9 +906,25 @@ game_html = """<!DOCTYPE html>
             return ball;
         }
 
+        // Initialize Cue Ball
         const cueBall = createBall(cueBallTex, -8, -3, -2, true);
-        const eightBall = createBall(eightBallTex, 8, 3, 2, false);
-        const nineBall = createBall(nineBallTex, 8, -3, -2, false); // Added the 9-ball
+
+        // Initialize Target Balls (8 through 15) with their standard colors
+        const targetBallsData = [
+            { num: 8, color: '#111111', isStripe: false, pos: [6, 0, 0] },     // 8 - Black (Solid)
+            { num: 9, color: '#ffcc00', isStripe: true, pos: [8, 2, 2] },      // 9 - Yellow (Stripe)
+            { num: 10, color: '#0033cc', isStripe: true, pos: [8, -2, -2] },   // 10 - Blue (Stripe)
+            { num: 11, color: '#cc0000', isStripe: true, pos: [10, 4, 4] },    // 11 - Red (Stripe)
+            { num: 12, color: '#6600cc', isStripe: true, pos: [10, -4, -4] },  // 12 - Purple (Stripe)
+            { num: 13, color: '#ff6600', isStripe: true, pos: [10, 0, 0] },    // 13 - Orange (Stripe)
+            { num: 14, color: '#006600', isStripe: true, pos: [12, 2, -2] },   // 14 - Green (Stripe)
+            { num: 15, color: '#663300', isStripe: true, pos: [12, -2, 2] }    // 15 - Brown/Maroon (Stripe)
+        ];
+
+        targetBallsData.forEach(data => {
+            const tex = createNumberedBallTexture(data.num, data.color, data.isStripe);
+            createBall(tex, data.pos[0], data.pos[1], data.pos[2], false);
+        });
 
         const cueGroup = new THREE.Group();
         scene.add(cueGroup);
@@ -1157,22 +1134,13 @@ game_html = """<!DOCTYPE html>
                 document.getElementById('hud-score').innerText = playerScore;
                 playSciFiSound('reward');
 
-                // Check if ALL target balls (8 and 9) have been sunk
-                const allTargetsSunk = balls.every(b => b.userData.isCue || b.userData.sunk);
+                // Check if ANY target ball has been sunk to trigger victory condition
+                const anyTargetSunk = balls.some(b => !b.userData.isCue && b.userData.sunk);
 
-                if (allTargetsSunk) {
+                if (anyTargetSunk) {
                     document.getElementById('hud-status').innerText = "WARPED";
                     document.getElementById('hud-status').style.color = "var(--laser-cyan)";
                     triggerVictory();
-                } else {
-                    document.getElementById('hud-status').innerText = "1 REMAINING";
-                    document.getElementById('hud-status').style.color = "var(--laser-cyan)";
-                    setTimeout(() => {
-                        if (!isGameOver) {
-                            document.getElementById('hud-status').innerText = "STABLE";
-                            document.getElementById('hud-status').style.color = "var(--plasma-orange)";
-                        }
-                    }, 2000);
                 }
             }
         }
